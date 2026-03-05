@@ -1,4 +1,5 @@
 from collections import Counter
+from itertools import combinations
 
 class Card:
     VALUES = {"2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, 
@@ -66,3 +67,20 @@ class Hand:
 
     def __gt__(self, other):
         return self._comparison_tuple() > other._comparison_tuple()
+
+    def __eq__(self, other):
+        if not isinstance(other, Hand):
+            return False
+        return self._comparison_tuple() == other._comparison_tuple()
+
+
+class Evaluator:
+    @staticmethod
+    def get_best_hand(hole_str, board_str):
+        all_cards = [Card(c) for c in (hole_str + " " + board_str).split()]
+        
+        possible_5_card_hands = []
+        for combo in combinations(all_cards, 5):
+            possible_5_card_hands.append(Hand(list(combo)))
+        
+        return max(possible_5_card_hands)

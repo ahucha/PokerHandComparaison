@@ -39,3 +39,7 @@ def test_board_plays_tie():
     best2 = Evaluator.get_best_hand(p2_hole, board)
     
     assert best1._comparison_tuple() == best2._comparison_tuple()
+
+def test_flush_detection():
+    h_flush = Hand.from_string("As Ks Js 7s 2s")
+    assert h_flush.category_rank == 5

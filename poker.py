@@ -45,21 +45,24 @@ class Hand:
                 is_straight = True
                 straight_high_card = 5
 
-        if is_straight:
-            self.category_rank = 4
-            if straight_high_card == 5:
-                self.tie_breakers = [5, 4, 3, 2, 1]
-            else:
-                self.tie_breakers = list(range(straight_high_card, straight_high_card - 5, -1))
-        
-        elif freqs == [4, 1]: self.category_rank = 7
-        elif freqs == [3, 2]: self.category_rank = 6
-        elif freqs == [3, 1, 1]: self.category_rank = 3
-        elif freqs == [2, 2, 1]: self.category_rank = 2
-        elif freqs == [2, 1, 1, 1]: self.category_rank = 1
-        else: self.category_rank = 0 
+        is_flush = len(set(c.suit for c in self.cards)) == 1
 
-        if not self.tie_breakers:
+        if is_straight and is_flush: self.category_rank = 8
+        elif freqs == [4, 1]:        self.category_rank = 7
+        elif freqs == [3, 2]:        self.category_rank = 6
+        elif is_flush:               self.category_rank = 5
+        elif is_straight:            self.category_rank = 4
+        elif freqs == [3, 1, 1]:     self.category_rank = 3
+        elif freqs == [2, 2, 1]:     self.category_rank = 2
+        elif freqs == [2, 1, 1, 1]:  self.category_rank = 1
+        else:                        self.category_rank = 0
+
+        if is_straight:
+            if straight_high_card == 5: self.tie_breakers = [5, 4, 3, 2, 1]
+            else: self.tie_breakers = list(range(straight_high_card, straight_high_card - 5, -1))
+        elif is_flush:
+            self.tie_breakers = [c.value for c in self.cards]
+        else:
             self.tie_breakers = [item[0] for item in self.sorted_counts]
 
     def _comparison_tuple(self):

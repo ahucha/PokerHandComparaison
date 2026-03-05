@@ -1,6 +1,7 @@
 from poker import Card
 from poker import Hand
 from poker import Evaluator
+from poker import resolve_game
 
 def test_card_creation():
     c = Card("As")
@@ -43,3 +44,15 @@ def test_board_plays_tie():
 def test_flush_detection():
     h_flush = Hand.from_string("As Ks Js 7s 2s")
     assert h_flush.category_rank == 5
+
+def test_resolve_game_winner():
+    board = "7c 7d 7h 2s 3d"
+    players = {
+        "Alice": "As Ks",
+        "Bob": "Qs Js"
+    }
+    winners = resolve_game(board, players)
+    
+    assert len(winners) == 1
+    assert winners[0]["name"] == "Alice"
+    assert winners[0]["hand"].category_name == "Three of a Kind"

@@ -4,6 +4,7 @@ from itertools import combinations
 class Card:
     VALUES = {"2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, 
               "9": 9, "10": 10, "J": 11, "Q": 12, "K": 13, "A": 14}
+    INV_VALUES = {v: k for k, v in VALUES.items()}
     
     def __init__(self, card_str):
         v_str = card_str[:-1]
@@ -14,10 +15,17 @@ class Card:
         return self.value > other.value
 
     def __repr__(self):
-        return f"{self.value}{self.suit}"
+        return f"{self.INV_VALUES[self.value]}{self.suit}"
 
 class Hand:
+    NAMES = {
+        8: "Straight Flush", 7: "Four of a Kind", 6: "Full House", 
+        5: "Flush", 4: "Straight", 3: "Three of a Kind", 
+        2: "Two Pair", 1: "One Pair", 0: "High Card"
+    }
+
     def __init__(self, cards):
+        self.original_cards = cards
         self.cards = sorted(cards, key=lambda c: c.value, reverse=True)
         counts = Counter(c.value for c in self.cards)
         self.sorted_counts = sorted(counts.items(), key=lambda x: (x[1], x[0]), reverse=True)
@@ -25,6 +33,7 @@ class Hand:
         self.category_rank = 0
         self.tie_breakers = []
         self._evaluate()
+        self.chosen5 = self._get_ordered_cards()
 
     @classmethod
     def from_string(cls, s):
@@ -36,7 +45,7 @@ class Hand:
         
         is_straight = False
         straight_high_card = 0
-        
+
         if len(values) >= 5:
             if values[0] - values[4] == 4:
                 is_straight = True
@@ -72,18 +81,40 @@ class Hand:
         return self._comparison_tuple() > other._comparison_tuple()
 
     def __eq__(self, other):
-        if not isinstance(other, Hand):
+        if not isinstance(other, Hand): 
             return False
         return self._comparison_tuple() == other._comparison_tuple()
 
+    def _get_ordered_cards(self):
+        if self.category_rank in [8, 5, 4, 0]:
+            if self.category_rank in [8, 4] and self.tie_breakers[0] == 5:
+                return sorted(self.cards, key=lambda c: c.value if c.value != 14 else 1, reverse=True)
+            return sorted(self.cards, key=lambda c: c.value, reverse=True)
+        else:
+            ordered = []
+            for val, _ in self.sorted_counts:
+                ordered.extend([c for c in self.cards if c.value == val])
+            return ordered
+
+    @property
+    def category_name(self):
+        return self.NAMES[self.category_rank]
+
+    def __repr__(self):
+        return f"{self.category_name}: {' '.join(str(c) for c in self.chosen5)}"
+
+def resolve_game(board_str, players):
+    results = []
+    for name, hole in players.items():
+        best = Evaluator.get_best_hand(hole, board_str)
+        results.append({"name": name, "hand": best})
+    results.sort(key=lambda x: x["hand"]._comparison_tuple(), reverse=True)
+    best_score = results[0]["hand"]._comparison_tuple()
+    return [r for r in results if r["hand"]._comparison_tuple() == best_score]
 
 class Evaluator:
     @staticmethod
     def get_best_hand(hole_str, board_str):
         all_cards = [Card(c) for c in (hole_str + " " + board_str).split()]
-        
-        possible_5_card_hands = []
-        for combo in combinations(all_cards, 5):
-            possible_5_card_hands.append(Hand(list(combo)))
-        
+        possible_5_card_hands = [Hand(list(combo)) for combo in combinations(all_cards, 5)]
         return max(possible_5_card_hands)
